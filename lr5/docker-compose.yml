@@ -1,0 +1,97 @@
+version: '3.7'
+
+services:
+  users_app:
+    build:
+      context: ./app/users_app
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    #    volumes:
+    #      - .:/app
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /code
+    depends_on:
+      - postgres_db
+    networks:
+      - my_net_1
+
+  postgres_db:
+    container_name: postgres
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=ivan
+      - POSTGRES_PASSWORD=ivan
+      - PGDATA=/data/postgres
+      - POSTGRES_DB=users_db
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d postgres" ]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    networks:
+      - my_net_1
+
+  # pgadmin
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: wania.pants@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: ivan
+    ports:
+      - "5050:80" # 5050 - порт для подключения из браузера
+    networks:
+      - my_net_1
+
+
+  mongo_app:
+    build:
+      context: ./app/mongo_app
+      dockerfile: Dockerfile
+    ports:
+      - "7007:7007"
+    depends_on:
+      - mongo
+    networks:
+      - my_net_1
+
+  mongo:
+    image: mongo
+    container_name: mongo_db
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    networks:
+      - my_net_1
+
+  redis:
+    image: redis
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - my_net_1
+
+
+
+# вроде бы реально не требуется отдельная сетка, но пусть будет
+networks:
+  my_net_1:
+    name: my_perfect_net
+    driver: "bridge"
+    external: false
+
+
+
