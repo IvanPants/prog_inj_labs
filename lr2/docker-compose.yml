@@ -1,0 +1,63 @@
+version: '3.7'
+
+services:
+  users_app:
+    build:
+      context: ./app/users_app
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    #    volumes:
+    #      - .:/app
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /code
+    depends_on:
+      - postgres_db
+    networks:
+      - my_net_1
+
+  postgres_db:
+    container_name: postgres1
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=ivan
+      - POSTGRES_PASSWORD=ivan
+      - PGDATA=/data/postgres
+      - POSTGRES_DB=users_db
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d postgres" ]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    networks:
+      - my_net_1
+
+  # pgadmin
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin1
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: wania.pants@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: ivan
+    ports:
+      - "5050:80" # 5050 - порт для подключения из браузера
+    networks:
+      - my_net_1
+
+
+  
+networks:
+  my_net_1:
+    name: my_perfect_net
+    driver: "bridge"
+    external: false
+
+
+
